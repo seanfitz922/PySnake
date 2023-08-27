@@ -1,167 +1,157 @@
 import pygame
-import os
 import random
 
+# Initialize pygame
 pygame.init()
-pygame.font.init()
 
-width, height = 900, 900
-WIN = pygame.display.set_mode((width, height))
+# Set up display dimensions and other constants
+display_width = 900
+display_height = 900
+snake_block_size = 25  # Increase the snake size
+snake_velocity = 15
 
-# Create two font objects for displaying the score and the end game
-score = pygame.font.SysFont('timesnewroman', 40)
-end_game = pygame.font.SysFont('timesnewroman', 100)
+# Set up colors and fonts
+white = (255, 255, 255)
+yellow = (255, 255, 102)
+black = (0, 0, 0)
+red = (213, 50, 80)
+green = (0, 255, 0)
+blue = (50, 153, 213)
 
-top_border = pygame.Rect(0, 0, width, 10)
-bottom_border = pygame.Rect(0, height - 10, width, 10)
-left_border = pygame.Rect(0, 0, 10, height)  # Left border rectangle
-right_border = pygame.Rect(width - 10, 0, 10, height)  # Right border rectangle
+# Set up display and clock
+display = pygame.display.set_mode((display_width, display_height))
 
-snake_size = 40
-snake_width, snake_height = 50, 50
-snake_x = width // 2 - snake_size // 2
-snake_y = height // 2 - snake_size // 2
-snake = pygame.Rect(snake_x, snake_y, snake_width, snake_height)
+# Load the background image
+background_image = pygame.image.load("checkered-background.jpg").convert()
 
-snake_segments = [snake]
+# Resize the background image to match the display dimensions
+background_image = pygame.transform.scale(background_image, (display_width, display_height))
 
-apple_size = 20
-apple_width, apple_height = 10, 10
-apple_x = random.randint(0, width - apple_width)
-apple_y = random.randint(0, height - apple_height)
+clock = pygame.time.Clock()
 
-apple_hit = pygame.USEREVENT + 1
-snake_hit = pygame.USEREVENT + 2
-apple_score = 0
-apple_moved_by_timer = False 
+# Set up fonts
+font_style = pygame.font.SysFont("timesnewroman", 25)
+score_font = pygame.font.SysFont("timesnewroman", 25)
 
-FPS = 60
-velocity = 5
-last_direction = None
+# Initialize global variables
+x1, y1 = display_width / 2, display_height / 2
+x1_change, y1_change = 0, 0
 
-red_ = (255, 0, 0)
-blue_ = (0, 0, 10)
-black_ = (0, 0, 0)
-white_ = (255, 255, 255)
-light_green_ = (144, 238, 144)
-dark_green_ = (1, 50, 32)
+current_score = 0
 
-def draw_window(snake_segments, apple, apple_score):
-    WIN.fill(light_green_)
+# Function to display player's score
+def player_score(score):
+    value = score_font.render("Score: " + str(score), True, black)
+    display.blit(value, [0, 0])
 
-    score_text = score.render("Score: " + str(apple_score), 1, white_)
-    WIN.blit(score_text, (10, 10))
+# Function to draw the snake
+def draw_snake(snake_block_size, snake_list):
+    for i in snake_list:
+        pygame.draw.rect(display, green, [i[0], i[1], snake_block_size, snake_block_size])  # Set snake color to green
 
-    pygame.draw.rect(WIN, white_, top_border)
-    pygame.draw.rect(WIN, white_, bottom_border)
-    pygame.draw.rect(WIN, white_, left_border)
-    pygame.draw.rect(WIN, white_, right_border)
-    
-    # Draw the entire snake's body
-    draw_snake(snake_segments)
-    
-    pygame.draw.rect(WIN, red_, apple)
-    pygame.display.update()
+# Function to display messages
+def message(msg, color):
+    mesg = font_style.render(msg, True, color)
+    display.blit(mesg, [display_width / 4, display_height / 4])
 
-def draw_game_over():
-    draw_text = end_game.render("Game Over", 1, white_)
-    WIN.blit(draw_text, (width//2 - draw_text.get_width() /2, height/2 - draw_text.get_height()/2))
-    pygame.display.update()
-    pygame.time.delay(5000)
-
-def draw_snake(snake_segments):
-    for segment in snake_segments:
-        pygame.draw.rect(WIN, dark_green_, segment)
-
-def update_snake_segments():
-    for i in range(len(snake_segments) - 1, 0, -1):
-        snake_segments[i] = snake_segments[i - 1].copy()
-
-def snake_handle_movement(keys_pressed, snake):
-    global last_direction
-
-    if snake.x < 11 or snake.x > width - 65 or snake.y < 11 or snake.y > width - 65:
-        pygame.event.post(pygame.event.Event(snake_hit))
-
-    else: 
-        if keys_pressed[pygame.K_a]:
-            last_direction = 'left'
-        elif keys_pressed[pygame.K_d]:
-            last_direction = 'right'
-        elif keys_pressed[pygame.K_w]:
-            last_direction = 'up'
-        elif keys_pressed[pygame.K_s]:
-            last_direction = 'down'
-
-        if last_direction == 'left':
-            snake.x -= velocity
-        elif last_direction == 'right':
-            snake.x += velocity
-        elif last_direction == 'up':
-            snake.y -= velocity
-        elif last_direction == 'down':
-            snake.y += velocity
-
-def generate_random_apple_position():
-    apple_x = random.randint(30, width - apple_width - 30)
-    apple_y = random.randint(30, height - apple_height - 30)
+# Function to generate apple's position
+def generate_apple_position():
+    apple_x = round(random.randrange(0, display_width - snake_block_size) / snake_block_size) * snake_block_size
+    apple_y = round(random.randrange(0, display_height - snake_block_size) / snake_block_size) * snake_block_size
     return apple_x, apple_y
 
-def handle_apple(apple, snake):
-    global apple_moved_by_timer, apple_score, snake_segments
+# Function to handle apple collision
+def handle_apple_collision(apple_x, apple_y, length_of_snake):
+    global current_score  # Use the global current_score variable
 
-    if apple.colliderect(snake):
-        if not apple_moved_by_timer:  # Check if the apple was not moved by the timer
-            apple_score += 1  # Increase the score only if not moved by timer
-        pygame.time.set_timer(apple_hit, 0)
-        pygame.event.post(pygame.event.Event(apple_hit))
+    if x1 == apple_x and y1 == apple_y:
+        apple_x, apple_y = generate_apple_position()
+        length_of_snake += 5
+        current_score += 1
+    return apple_x, apple_y, length_of_snake
 
-        # Add multiple segments to the snake's body
-        num_new_segments = 10
-        for _ in range(num_new_segments):
-            new_segment = snake_segments[-1].copy()
-            snake_segments.append(new_segment)
+# Function to handle player's movement
+def handle_movement():
+    global x1, y1, x1_change, y1_change
 
-    else:
-        apple_moved_by_timer = False  # Reset the flag when apple is not hit
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_a:
+                x1_change, y1_change = -snake_block_size, 0
+            elif event.key == pygame.K_d:
+                x1_change, y1_change = snake_block_size, 0
+            elif event.key == pygame.K_w:
+                y1_change, x1_change = -snake_block_size, 0
+            elif event.key == pygame.K_s:
+                y1_change, x1_change = snake_block_size, 0
 
-def main():
+    x1 += x1_change
+    y1 += y1_change
 
-    apple_x, apple_y = generate_random_apple_position()
+    # Check to see if player is off screen bounds
+    if x1 >= display_width or x1 < 0 or y1 >= display_height or y1 < 0:
+        return True
 
-    pygame.time.set_timer(apple_hit, 5000)
+    return False
 
-    apple = pygame.Rect(apple_x, apple_y, apple_width, apple_height)
+# Function to handle game over
+def game_over(score):
+    message("Game Over! Press W-Play Again or Q-Quit", red)
+    player_score(score)
+    pygame.display.update()
 
-    clock = pygame.time.Clock()
-    run = True
-    while run:
-        clock.tick(FPS)
+    while True:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                run = False
-                pygame.quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    pygame.quit()
+                    quit()
+                if event.key == pygame.K_w:
+                    main_game_loop(1)
 
-            elif event.type == apple_hit:
-                apple_x, apple_y = generate_random_apple_position()
-                apple.x = apple_x
-                apple.y = apple_y
-                apple_moved_by_timer = True
-                pygame.time.set_timer(apple_hit, 4000)
+# Main game loop
+def main_game_loop(initial_length_of_snake):
+    global x1, y1, x1_change, y1_change, current_score
 
-            elif event.type == snake_hit:
-                draw_game_over()
-                run = False  
-                break
+    # Reset the current score to 0
+    current_score = 0
 
-        keys_pressed = pygame.key.get_pressed()
-        snake_handle_movement(keys_pressed, snake)
-        update_snake_segments()
-        handle_apple(apple, snake)
-        draw_window(snake_segments, apple, apple_score)
+    game_over_flag = False
+    x1, y1 = display_width / 2, display_height / 2
+    x1_change, y1_change = 0, 0
 
-    # Make sure to call pygame.quit() when the game loop ends
-    pygame.quit()
+    snake_List = []
+    length_of_snake = initial_length_of_snake
 
-if __name__ == "__main__":
-    main()
+    apple_x, apple_y = generate_apple_position()
+
+    while not game_over_flag:
+        game_over_flag = handle_movement()
+
+        display.blit(background_image, (0, 0))
+        pygame.draw.rect(display, red, [apple_x, apple_y, snake_block_size, snake_block_size])
+        snake_head = [x1, y1]
+        snake_List.append(snake_head)
+
+        if len(snake_List) > length_of_snake:
+            del snake_List[0]
+
+        for x in snake_List[:-1]:
+            if x == snake_head:
+                game_over_flag = True
+
+        draw_snake(snake_block_size, snake_List)
+        player_score(current_score)  # Display the current score
+        pygame.display.update()
+
+        apple_x, apple_y, length_of_snake = handle_apple_collision(apple_x, apple_y, length_of_snake)
+
+        clock.tick(snake_velocity)
+
+    game_over(current_score)  # Display game over message with score
+
+# Start the game loop with initial snake length of 1
+main_game_loop(1)
