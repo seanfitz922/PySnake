@@ -99,10 +99,21 @@ def handle_movement():
 
 # Function to handle game over
 def game_over(score):
-    main_game_loop(1)
+    message("Game Over! Press W-Play Again or Q-Quit", red)
+    player_score(score)
+    pygame.display.update()
 
-# Inside the main game loop
-def main_game_loop(initial_length_of_snake, ai_genes=None):
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    pygame.quit()
+                    quit()
+                if event.key == pygame.K_w:
+                    main_game_loop(1)
+
+# Main game loop
+def main_game_loop(initial_length_of_snake):
     global x1, y1, x1_change, y1_change, current_score
 
     # Reset the current score to 0
@@ -138,27 +149,9 @@ def main_game_loop(initial_length_of_snake, ai_genes=None):
 
         apple_x, apple_y, length_of_snake = handle_apple_collision(apple_x, apple_y, length_of_snake)
 
-        if ai_genes is not None:
-            # Determine AI agent's action based on current position and genes
-            agent_action = ai_genes[len(snake_List) % len(ai_genes)]
-            
-            # Translate agent_action into movement
-            if agent_action == "up":
-                y1_change, x1_change = -snake_block_size, 0
-            elif agent_action == "down":
-                y1_change, x1_change = snake_block_size, 0
-            elif agent_action == "left":
-                y1_change, x1_change = 0, -snake_block_size
-            elif agent_action == "right":
-                y1_change, x1_change = 0, snake_block_size
-
         clock.tick(snake_velocity)
 
     game_over(current_score)  # Display game over message with score
 
 # Start the game loop with initial snake length of 1
-# For manual player control:
-# main_game_loop(1)
-
-# For AI control (replace best_genes with the AI agent's genes):
-# main_game_loop(1, best_genes)
+main_game_loop(1)

@@ -1,27 +1,55 @@
-import random
-from PySnake import display_width, display_height, snake_block_size, current_score
+import random, math
+import matplotlib.pyplot as plt
+from PySnake import display_width, display_height, snake_block_size, generate_apple_position, main_game_loop
 
-class AI(P):
+class AI():
     def __init__(self, genes):
         self.genes = genes
         self.fitness = 0
 
-    def simulate_gameplay(self):
+    def simulate_gameplay(self, apple_x, apple_y):  # Pass apple_x and apple_y as arguments
         # Reset game variables
         game_over_flag = False
         x, y = display_width / 2, display_height / 2
         snake_list = []
         length_of_snake = 1
 
+        x_change, y_change = 0, 0  # Declare x_change and y_change as local variables
+
         # Simulate game with agent's genes
         while not game_over_flag:
+            # Calculate distance to the apple
+            snake_head_x, snake_head_y = x, y
+            distance_to_apple = math.sqrt((snake_head_x - apple_x)**2 + (snake_head_y - apple_y)**2)
             # Determine agent's action based on current position and genes
             agent_action = self.genes[len(snake_list) % len(self.genes)]
+
+            if distance_to_apple < 10:
+                # Calculate the relative positions of the snake's head and the apple
+                horizontal_distance = apple_x - snake_head_x
+                vertical_distance = apple_y - snake_head_y
+                
+                # Prioritize actions based on the relative positions
+                if abs(horizontal_distance) >= abs(vertical_distance):
+                    if horizontal_distance > 0:
+                        agent_action = "right"
+                    else:
+                        agent_action = "left"
+                else:
+                    if vertical_distance > 0:
+                        agent_action = "down"
+                    else:
+                        agent_action = "up"
 
             # Translate agent_action into movement
             if agent_action == "up":
                 y_change, x_change = -snake_block_size, 0
-            # ... Similar cases for other actions ...
+            elif agent_action == "down":
+                y_change, x_change = snake_block_size, 0
+            elif agent_action == "left":
+                y_change, x_change = 0, -snake_block_size
+            elif agent_action == "right":
+                y_change, x_change = 0, snake_block_size
 
             # Move snake
             x += x_change
@@ -32,9 +60,16 @@ class AI(P):
                 game_over_flag = True
             # ... Check for collisions and update snake_list ...
 
-        # Return the score achieved
-        return current_score
+            # Check for apple collision and update length_of_snake
+            if (x, y) == (apple_x, apple_y):
+                apple_x, apple_y = generate_apple_position()
+                length_of_snake += 1  # Increase snake's length when apple is collected
 
+        # Return the length of the snake and the apple's position
+        return length_of_snake - 1
+
+# Return the score achieved
+    
 # up, down, left, right
 num_genes = 4
 # initial population size
@@ -42,7 +77,7 @@ population_size = 100
 # number of population that will be selected as parents
 parent_selection_rate = 0.3
 # number of generations 
-num_generations = 50
+num_generations = 100
 # the rate of which mutations will occur in the population
 mutation_rate = 0.1
 
@@ -84,32 +119,37 @@ def evolve_population(current_population):
 
     return next_generation
 
-
 def evaluate_fitness(agent):
-    # Simulate gameplay and return score achieved by the agent
-    return agent.simulate_gameplay()
+    # Generate initial apple position
+    apple_x, apple_y = generate_apple_position()
 
+    # Simulate gameplay and return score achieved by the agent
+    return agent.simulate_gameplay(apple_x, apple_y)
 
 def selection(population):
     # Sort agents by fitness in descending order
     sorted_population = sorted(population, key=lambda agent: agent.fitness, reverse=True)
     
-    # Select top agents as parents
+    # Select top agents as parents if there are enough agents
     num_parents = int(len(population) * parent_selection_rate)
+    num_parents -= num_parents % 2  # Make sure it's an even number
+    num_parents = max(num_parents, 2)  # Ensure at least 2 parents
     parents = sorted_population[:num_parents]
 
     return parents
 
 
+best_fitness_scores = []  # Initialize an empty list to store fitness scores
+
 def main():
     population = create_initial_population(population_size)
     best_agent = None
 
-    for generation in range(num_generations):
-        # Evaluate fitness and evolve population
-        for agent in population:
-            agent.fitness = evaluate_fitness(agent)
+    # Evaluate fitness of initial population
+    for agent in population:
+        agent.fitness = evaluate_fitness(agent)
 
+    for generation in range(num_generations):
         # Find the best agent in the current generation
         best_agent_in_generation = max(population, key=lambda agent: agent.fitness)
 
@@ -117,11 +157,27 @@ def main():
         if best_agent is None or best_agent_in_generation.fitness > best_agent.fitness:
             best_agent = best_agent_in_generation
 
+        # Append the best fitness score of the current generation to the list
+        best_fitness_scores.append(best_agent.fitness)
+
         # Evolve the population using selection, crossover, and mutation
         population = evolve_population(population)
 
     # Extract the genes of the best agent
     best_genes = best_agent.genes
 
-    # Use best_genes in your game loop
+    create_fitness_progress_plot(best_fitness_scores)
 
+    # Call the game loop with initial snake length of 1 and AI control
+    main_game_loop(1, best_genes)
+
+def create_fitness_progress_plot(best_fitness_scores):
+    plt.plot(range(num_generations), best_fitness_scores, marker='o')
+    plt.xlabel('Generation')
+    plt.ylabel('Best Fitness Score')
+    plt.title('Fitness Progress Over Generations')
+    plt.grid(True)
+    plt.show()
+
+if __name__ == "__main__":
+    main()
