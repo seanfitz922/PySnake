@@ -119,12 +119,21 @@ def evolve_population(current_population):
 
     return next_generation
 
-def evaluate_fitness(agent):
-    # Generate initial apple position
-    apple_x, apple_y = generate_apple_position()
+def evaluate_fitness(agent, num_games=10):
+    total_score = 0
+    for _ in range(num_games):
+        # Generate initial apple position
+        apple_x, apple_y = generate_apple_position()
 
-    # Simulate gameplay and return score achieved by the agent
-    return agent.simulate_gameplay(apple_x, apple_y)
+        # Simulate gameplay and accumulate scores across games
+        ai_action = agent.genes[0]  # Set AI action based on the first gene
+        total_score += agent.simulate_gameplay(apple_x, apple_y)
+
+    # Calculate average score across games
+    average_score = total_score / num_games
+
+    return average_score
+
 
 def selection(population):
     # Sort agents by fitness in descending order
@@ -163,13 +172,18 @@ def main():
         # Evolve the population using selection, crossover, and mutation
         population = evolve_population(population)
 
+        # Display the progress and best fitness score
+        print(f"Generation {generation+1}/{num_generations} - Best Fitness: {best_agent.fitness}")
+
     # Extract the genes of the best agent
     best_genes = best_agent.genes
 
     create_fitness_progress_plot(best_fitness_scores)
 
-    # Call the game loop with initial snake length of 1 and AI control
-    main_game_loop(1, best_genes)
+    # Simulate multiple games using the best agent's genes
+    num_games = 10  # Change this to the desired number of games
+    for _ in range(num_games):
+        main_game_loop(1, num_games=num_games)
 
 def create_fitness_progress_plot(best_fitness_scores):
     plt.plot(range(num_generations), best_fitness_scores, marker='o')

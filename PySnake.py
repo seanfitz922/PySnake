@@ -102,63 +102,58 @@ def game_over(score):
     main_game_loop(1)
 
 # Inside the main game loop
-def main_game_loop(initial_length_of_snake, ai_genes=None):
-    global x1, y1, x1_change, y1_change, current_score
+# Inside the main game loop
+ai_action = "up"  # Global variable to store AI's action
 
-    # Reset the current score to 0
-    current_score = 0
+def main_game_loop(initial_length_of_snake, num_games=1):
+    global x1, y1, x1_change, y1_change, current_score, ai_action
 
-    game_over_flag = False
-    x1, y1 = display_width / 2, display_height / 2
-    x1_change, y1_change = 0, 0
+    for _ in range(num_games):
+        # Reset the current score to 0
+        current_score = 0
 
-    snake_List = []
-    length_of_snake = initial_length_of_snake
+        game_over_flag = False
+        x1, y1 = display_width / 2, display_height / 2
+        x1_change, y1_change = 0, 0
 
-    apple_x, apple_y = generate_apple_position()
+        snake_List = []
+        length_of_snake = initial_length_of_snake
 
-    while not game_over_flag:
-        game_over_flag = handle_movement()
+        apple_x, apple_y = generate_apple_position()
 
-        display.blit(background_image, (0, 0))
-        pygame.draw.rect(display, red, [apple_x, apple_y, snake_block_size, snake_block_size])
-        snake_head = [x1, y1]
-        snake_List.append(snake_head)
+        while not game_over_flag:
+            game_over_flag = handle_movement()
 
-        if len(snake_List) > length_of_snake:
-            del snake_List[0]
+            display.blit(background_image, (0, 0))
+            pygame.draw.rect(display, red, [apple_x, apple_y, snake_block_size, snake_block_size])
+            snake_head = [x1, y1]
+            snake_List.append(snake_head)
 
-        for x in snake_List[:-1]:
-            if x == snake_head:
-                game_over_flag = True
+            if len(snake_List) > length_of_snake:
+                del snake_List[0]
 
-        draw_snake(snake_block_size, snake_List)
-        player_score(current_score)  # Display the current score
-        pygame.display.update()
+            for x in snake_List[:-1]:
+                if x == snake_head:
+                    game_over_flag = True
 
-        apple_x, apple_y, length_of_snake = handle_apple_collision(apple_x, apple_y, length_of_snake)
+            draw_snake(snake_block_size, snake_List)
+            player_score(current_score)  # Display the current score
+            pygame.display.update()
 
-        if ai_genes is not None:
-            # Determine AI agent's action based on current position and genes
-            agent_action = ai_genes[len(snake_List) % len(ai_genes)]
-            
-            # Translate agent_action into movement
-            if agent_action == "up":
+            apple_x, apple_y, length_of_snake = handle_apple_collision(apple_x, apple_y, length_of_snake)
+
+            # Use AI action if specified
+            if ai_action == "up":
                 y1_change, x1_change = -snake_block_size, 0
-            elif agent_action == "down":
+            elif ai_action == "down":
                 y1_change, x1_change = snake_block_size, 0
-            elif agent_action == "left":
+            elif ai_action == "left":
                 y1_change, x1_change = 0, -snake_block_size
-            elif agent_action == "right":
+            elif ai_action == "right":
                 y1_change, x1_change = 0, snake_block_size
 
-        clock.tick(snake_velocity)
+            clock.tick(snake_velocity)
 
-    game_over(current_score)  # Display game over message with score
+        # Display game over message with score
+        game_over(current_score)
 
-# Start the game loop with initial snake length of 1
-# For manual player control:
-# main_game_loop(1)
-
-# For AI control (replace best_genes with the AI agent's genes):
-# main_game_loop(1, best_genes)
