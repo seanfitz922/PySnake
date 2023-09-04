@@ -1,0 +1,1 @@
+random.choice(["up", "down", "left", "right"])

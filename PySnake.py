@@ -1,5 +1,4 @@
-import pygame
-import random
+import pygame, random, math
 
 # Initialize pygame
 pygame.init()
@@ -102,10 +101,29 @@ def game_over(score):
     main_game_loop(1)
 
 # Inside the main game loop
-# Inside the main game loop
-ai_action = "up"  # Global variable to store AI's action
+
+def calculate_distance(x1, y1, x2, y2):
+    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+def update_ai_action(snake_head_x, snake_head_y, apple_x, apple_y):
+    distance_to_apple = calculate_distance(snake_head_x, snake_head_y, apple_x, apple_y)
+
+    horizontal_distance = apple_x - snake_head_x
+    vertical_distance = apple_y - snake_head_y
+
+    if abs(horizontal_distance) >= abs(vertical_distance):
+        if horizontal_distance > 0:
+            return "right"
+        else:
+            return "left"
+    else:
+        if vertical_distance > 0:
+            return "down"
+        else:
+            return "up"
 
 def main_game_loop(initial_length_of_snake, num_games=1):
+
     global x1, y1, x1_change, y1_change, current_score, ai_action
 
     for _ in range(num_games):
@@ -142,7 +160,10 @@ def main_game_loop(initial_length_of_snake, num_games=1):
 
             apple_x, apple_y, length_of_snake = handle_apple_collision(apple_x, apple_y, length_of_snake)
 
-            # Use AI action if specified
+            # Update AI action based on the current position and apple position
+            ai_action = update_ai_action(x1, y1, apple_x, apple_y)
+
+            # Use AI action for movement
             if ai_action == "up":
                 y1_change, x1_change = -snake_block_size, 0
             elif ai_action == "down":
