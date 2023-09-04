@@ -1,5 +1,4 @@
-import random
-import math
+import random, math, json
 import matplotlib.pyplot as plt
 from PySnake import display_width, display_height, snake_block_size, generate_apple_position
 
@@ -76,7 +75,7 @@ class AI:
 
 # Constants
 num_genes = 4
-population_size = 200
+population_size = 100
 parent_selection_rate = 0.3
 num_generations = 100
 mutation_rate = 0.1
@@ -170,10 +169,20 @@ def main():
     # Extract the genes of the best agent
     best_genes = best_agent.genes
 
+    # Save the best genes to a JSON file
+    with open('best_genes.json', 'w') as file:
+        json.dump(best_genes, file)
+
     # Create a fitness progress plot
     create_fitness_progress_plot(best_fitness_scores)
 
     # Simulate multiple games using the best agent's genes
+    num_games_to_simulate = 10  # Adjust this number as needed
+    for _ in range(num_games_to_simulate):
+        apple_x, apple_y = generate_apple_position()
+        score = best_agent.simulate_gameplay(apple_x, apple_y)
+        print(f"Game {_+1}/{num_games_to_simulate} - Score: {score}")
+
 
 def create_fitness_progress_plot(best_fitness_scores):
     # Plot the best fitness scores for each generation
@@ -183,4 +192,7 @@ def create_fitness_progress_plot(best_fitness_scores):
     plt.title('Fitness Progress Over Generations')
     plt.grid(True)
     plt.show()
+
+if __name__ == "__main__":
+    main()
 

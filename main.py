@@ -1,4 +1,4 @@
-import pygame
+import pygame, json
 from PySnake import (
     display_width,
     display_height,
@@ -24,8 +24,12 @@ pygame.init()
 
 score_font = pygame.font.SysFont("timesnewroman", 25)
 
-# Create an instance of the AI class with initial genes
-ai_agent = AI(["up", "down", "left", "right"])
+# Load the best genes from the JSON file
+with open('best_genes.json', 'r') as file:
+    best_genes = json.load(file)
+
+# Create an instance of the AI class with the loaded genes
+ai_agent = AI(best_genes)
 
 # Main game loop
 game_over_flag = False
