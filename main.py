@@ -9,8 +9,7 @@ from PySnake import (
     display,
     snake_block_size,
     generate_apple_position,
-    handle_apple_collision,
-    handle_movement,
+    end_game,
     draw_snake,
     player_score,
 )
@@ -23,11 +22,6 @@ red = (213, 50, 80)
 # Initialize pygame
 pygame.init()
 
-# Initialize global variables
-x1, y1 = display_width / 2, display_height / 2
-x1_change, y1_change = 0, 0
-
-current_score = 0
 score_font = pygame.font.SysFont("timesnewroman", 25)
 
 # Create an instance of the AI class with initial genes
@@ -36,11 +30,7 @@ ai_agent = AI(["up", "down", "left", "right"])
 # Main game loop
 game_over_flag = False
 for game in range(10):
-
-    # Generate initial apple position
-    apple_x, apple_y = generate_apple_position()
-
-    # Reset the current score to 0
+    
     current_score = 0
 
     game_over_flag = False
@@ -53,7 +43,8 @@ for game in range(10):
     apple_x, apple_y = generate_apple_position()
 
     while not game_over_flag:
-        game_over_flag = handle_movement()
+        snake_head_x, snake_head_y = x1, y1
+        game_over_flag = end_game()
 
         display.blit(background_image, (0, 0))
         pygame.draw.rect(display, red, [apple_x, apple_y, snake_block_size, snake_block_size])
@@ -68,11 +59,8 @@ for game in range(10):
                 game_over_flag = True
 
         draw_snake(display, snake_block_size, snake_list)
-        player_score(current_score, display, score_font)  # Display the current score
-        pygame.display.update()
-
-        apple_x, apple_y, length_of_snake = handle_apple_collision(apple_x, apple_y, length_of_snake)
-
+        player_score(current_score, display, score_font) 
+        pygame.display.update()        
         # Update AI action based on the current position and apple position
         ai_action = ai_agent.determine_action(x1, y1, apple_x, apple_y)
 
@@ -98,5 +86,6 @@ for game in range(10):
         if (x1, y1) == (apple_x, apple_y):
             apple_x, apple_y = generate_apple_position()
             length_of_snake += 1
+            current_score +=1
 
         clock.tick(snake_velocity)
