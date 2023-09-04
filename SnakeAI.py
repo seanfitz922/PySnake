@@ -9,24 +9,60 @@ class AI:
         self.genes = genes
         self.fitness = 0
 
-    def determine_action(self, snake_x, snake_y, apple_x, apple_y):
-        # Calculate the horizontal and vertical distances between snake and apple
-        horizontal_distance = apple_x - snake_x
-        vertical_distance = apple_y - snake_y
+    def bearing(self, x1, y1, x2, y2):
+        dx = x2 - x1
+        dy = y2 - y1
 
-        # Choose the action based on distance (turn towards the apple)
-        if abs(horizontal_distance) >= abs(vertical_distance):
-            if horizontal_distance > 0:
-                action = "right"
-            else:
-                action = "left"
+        angle = math.atan2(dy, dx)
+        if angle < 0:
+            angle += 2 * math.pi  # Ensure angle is in the range [0, 2*pi]
+
+        return angle
+
+    def determine_action(self, snake_x, snake_y, apple_x, apple_y, x_change, y_change):
+        # Calculate the bearing between snake head and apple
+        bearing_to_apple = self.bearing(snake_x, snake_y, apple_x, apple_y)
+
+        # Initialize a list of valid actions
+        valid_actions = []
+
+        # Determine the current direction the snake is moving
+        if x_change == snake_block_size:
+            current_direction = "right"
+        elif x_change == -snake_block_size:
+            current_direction = "left"
+        elif y_change == snake_block_size:
+            current_direction = "down"
+        elif y_change == -snake_block_size:
+            current_direction = "up"
         else:
-            if vertical_distance > 0:
-                action = "down"
-            else:
-                action = "up"
+            current_direction = None  # Snake is not moving
 
-        return action
+        # Actions that do not lead to running into itself
+        if current_direction != "left":
+            valid_actions.append("right")
+        if current_direction != "right":
+            valid_actions.append("left")
+        if current_direction != "up":
+            valid_actions.append("down")
+        if current_direction != "down":
+            valid_actions.append("up")
+
+        # Choose the action based on the bearing
+        if 0 <= bearing_to_apple < math.pi / 4:
+            action = "right"
+        elif math.pi / 4 <= bearing_to_apple < 3 * math.pi / 4:
+            action = "down"
+        elif 3 * math.pi / 4 <= bearing_to_apple < 5 * math.pi / 4:
+            action = "left"
+        else:
+            action = "up"
+
+        # If the chosen action is valid, use. Otherwise, choose a random valid action
+        if action in valid_actions:
+            return action
+        else:
+            return random.choice(valid_actions)
 
     def simulate_gameplay(self, apple_x, apple_y):
         game_over_flag = False
@@ -49,8 +85,8 @@ class AI:
                 if segment == snake_head:
                     game_over_flag = True
 
-            # Use the determine_action method to determine the action
-            agent_action = self.determine_action(x, y, apple_x, apple_y)
+            # Use the determine_action method to select action
+            agent_action = self.determine_action(x, y, apple_x, apple_y, x_change, y_change)
 
             if agent_action == "up":
                 y_change, x_change = -snake_block_size, 0
@@ -177,11 +213,11 @@ def main():
     create_fitness_progress_plot(best_fitness_scores)
 
     # Simulate multiple games using the best agent's genes
-    num_games_to_simulate = 10  # Adjust this number as needed
-    for _ in range(num_games_to_simulate):
+    num_games_to_simulate = 10 
+    for i in range(num_games_to_simulate):
         apple_x, apple_y = generate_apple_position()
         score = best_agent.simulate_gameplay(apple_x, apple_y)
-        print(f"Game {_+1}/{num_games_to_simulate} - Score: {score}")
+        print(f"Game {i+1}/{num_games_to_simulate} - Score: {score}")
 
 
 def create_fitness_progress_plot(best_fitness_scores):
