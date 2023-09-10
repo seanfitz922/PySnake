@@ -66,7 +66,7 @@ for game in range(10):
         player_score(current_score, display, score_font) 
         pygame.display.update()        
         # Update AI action based on the current position and apple position
-        ai_action = ai_agent.determine_action(x1, y1, apple_x, apple_y, x1_change, y1_change)
+        ai_action = ai_agent.determine_action(x1, y1, apple_x, apple_y, x1_change, y1_change, snake_list)
 
         # Use AI action for movement
         if ai_action == "up":

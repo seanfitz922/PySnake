@@ -15,11 +15,12 @@ class AI:
 
         angle = math.atan2(dy, dx)
         if angle < 0:
-            angle += 2 * math.pi  # Ensure angle is in the range [0, 2*pi]
+            # Ensure angle is in the range [0, 2*pi]
+            angle += 2 * math.pi  
 
         return angle
 
-    def determine_action(self, snake_x, snake_y, apple_x, apple_y, x_change, y_change):
+    def determine_action(self, snake_x, snake_y, apple_x, apple_y, x_change, y_change, snake_list):
         # Calculate the bearing between snake head and apple
         bearing_to_apple = self.bearing(snake_x, snake_y, apple_x, apple_y)
 
@@ -38,7 +39,7 @@ class AI:
         else:
             current_direction = None  # Snake is not moving
 
-        # Actions that do not lead to running into itself
+        # Add actions that do not lead to running into itself
         if current_direction != "left":
             valid_actions.append("right")
         if current_direction != "right":
@@ -47,6 +48,11 @@ class AI:
             valid_actions.append("down")
         if current_direction != "down":
             valid_actions.append("up")
+
+        # Check for potential self-collision and remove invalid actions
+        for action in valid_actions[:]:
+            if self.will_collide(snake_x, snake_y, action, snake_list):
+                valid_actions.remove(action)
 
         # Choose the action based on the bearing
         if 0 <= bearing_to_apple < math.pi / 4:
@@ -58,12 +64,30 @@ class AI:
         else:
             action = "up"
 
-        # If the chosen action is valid, use. Otherwise, choose a random valid action
+        # If the chosen action is valid, use. Else, choose a random valid action
         if action in valid_actions:
             return action
         else:
             return random.choice(valid_actions)
 
+    def will_collide(self, snake_x, snake_y, action, snake_list):
+        # Simulate the move before making it
+        if action == "up":
+            new_x, new_y = snake_x, snake_y - snake_block_size
+        elif action == "down":
+            new_x, new_y = snake_x, snake_y + snake_block_size
+        elif action == "left":
+            new_x, new_y = snake_x - snake_block_size, snake_y
+        elif action == "right":
+            new_x, new_y = snake_x + snake_block_size, snake_y
+
+        # Check if the new position would collide with the snake's body
+        # Exclude the snake's head
+        for segment in snake_list[:-1]:  
+            if (new_x, new_y) == segment:
+                return True
+
+        return False
     def simulate_gameplay(self, apple_x, apple_y):
         game_over_flag = False
         x, y = display_width / 2, display_height / 2
@@ -72,9 +96,6 @@ class AI:
         x_change, y_change = 0, 0
 
         while not game_over_flag:
-            snake_head_x, snake_head_y = x, y
-            distance_to_apple = math.sqrt((snake_head_x - apple_x) ** 2 + (snake_head_y - apple_y) ** 2)
-
             snake_head = [x, y]
             snake_list.append(snake_head)
 
@@ -86,7 +107,7 @@ class AI:
                     game_over_flag = True
 
             # Use the determine_action method to select action
-            agent_action = self.determine_action(x, y, apple_x, apple_y, x_change, y_change)
+            agent_action = self.determine_action(x, y, apple_x, apple_y, x_change, y_change, snake_list)
 
             if agent_action == "up":
                 y_change, x_change = -snake_block_size, 0
@@ -111,7 +132,7 @@ class AI:
 
 # Constants
 num_genes = 4
-population_size = 100
+population_size = 50
 parent_selection_rate = 0.3
 num_generations = 100
 mutation_rate = 0.1
