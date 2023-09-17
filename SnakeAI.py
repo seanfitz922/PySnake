@@ -51,10 +51,6 @@ class AI:
         if current_direction != "down":
             valid_actions.append("up")
 
-        for action in valid_actions[:]:
-            if self.will_collide(snake_x, snake_y, action, snake_list):
-                valid_actions.remove(action)
-
         # Calculate the total repulsion using genes
         total_repulsion = (
             self.genes[0] * math.cos(bearing_to_apple) +
@@ -74,7 +70,9 @@ class AI:
         if action in valid_actions:
             return action
         else:
+            # If the action selected by the genes is invalid, choose a random valid action
             return random.choice(valid_actions)
+
 
     def will_collide(self, snake_x, snake_y, action, snake_list):
         # Simulate the move before making it
