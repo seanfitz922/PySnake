@@ -13,7 +13,7 @@ from PySnake import (
     draw_snake,
     player_score,
 )
-from SnakeAI import AI
+from SnakeAI import AI 
 
 # Set up colors and fonts
 white = (255, 255, 255)
@@ -65,8 +65,16 @@ for game in range(10):
         draw_snake(display, snake_block_size, snake_list)
         player_score(current_score, display, score_font) 
         pygame.display.update()        
+        # Calculate repulsion factors
+        apple_attraction = 1  # Adjust this weight as needed
+        apple_attraction = 1  # Adjust this weight as needed
+        wall_repulsion = ai_agent.calculate_wall_repulsion(x1, y1, display_width, display_height)
+        snake_repulsion = ai_agent.calculate_snake_repulsion(x1, y1, snake_list)
+
         # Update AI action based on the current position and apple position
-        ai_action = ai_agent.determine_action(x1, y1, apple_x, apple_y, x1_change, y1_change, snake_list)
+        ai_action = ai_agent.determine_action(
+            x1, y1, apple_x, apple_y, x1_change, y1_change, snake_list
+        )
 
         # Use AI action for movement
         if ai_action == "up":

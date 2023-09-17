@@ -1,8 +1,15 @@
-import random, math, json
+import random
+import math
+import json
 import matplotlib.pyplot as plt
 from PySnake import display_width, display_height, snake_block_size, generate_apple_position
 
 best_fitness_scores = []
+
+# Define repulsion values
+apple_attraction_value = 1.0
+wall_repulsion_value = 0.5
+snake_repulsion_value = 0.2
 
 class AI:
     def __init__(self, genes):
@@ -20,14 +27,24 @@ class AI:
 
         return angle
 
+    def calculate_wall_repulsion(self, snake_x, snake_y, display_width, display_height):
+        distance_to_wall = min(snake_x, snake_y, display_width - snake_x, display_height - snake_y)
+        wall_repulsion = 1 / (distance_to_wall + 1)  # Add 1 to avoid division by zero
+        return wall_repulsion
+
+    def calculate_snake_repulsion(self, snake_x, snake_y, snake_list):
+        min_distance = float('inf')
+        for segment in snake_list[:-1]:
+            distance = math.sqrt((snake_x - segment[0]) ** 2 + (snake_y - segment[1]) ** 2)
+            min_distance = min(min_distance, distance)
+        snake_repulsion = 1 / (min_distance + 1)  # Add 1 to avoid division by zero
+        return snake_repulsion
+
     def determine_action(self, snake_x, snake_y, apple_x, apple_y, x_change, y_change, snake_list):
-        # Calculate the bearing between snake head and apple
         bearing_to_apple = self.bearing(snake_x, snake_y, apple_x, apple_y)
 
-        # Initialize a list of valid actions
         valid_actions = []
 
-        # Determine the current direction the snake is moving
         if x_change == snake_block_size:
             current_direction = "right"
         elif x_change == -snake_block_size:
@@ -37,9 +54,8 @@ class AI:
         elif y_change == -snake_block_size:
             current_direction = "up"
         else:
-            current_direction = None  # Snake is not moving
+            current_direction = None
 
-        # Add actions that do not lead to running into itself
         if current_direction != "left":
             valid_actions.append("right")
         if current_direction != "right":
@@ -49,22 +65,25 @@ class AI:
         if current_direction != "down":
             valid_actions.append("up")
 
-        # Check for potential self-collision and remove invalid actions
         for action in valid_actions[:]:
             if self.will_collide(snake_x, snake_y, action, snake_list):
                 valid_actions.remove(action)
 
-        # Choose the action based on the bearing
-        if 0 <= bearing_to_apple < math.pi / 4:
+        total_repulsion = (
+            apple_attraction_value * math.cos(bearing_to_apple) +
+            wall_repulsion_value +
+            snake_repulsion_value
+        )
+
+        if total_repulsion >= 0:
             action = "right"
-        elif math.pi / 4 <= bearing_to_apple < 3 * math.pi / 4:
+        elif total_repulsion >= -math.pi / 4:
             action = "down"
-        elif 3 * math.pi / 4 <= bearing_to_apple < 5 * math.pi / 4:
+        elif total_repulsion >= -3 * math.pi / 4:
             action = "left"
         else:
             action = "up"
 
-        # If the chosen action is valid, use. Else, choose a random valid action
         if action in valid_actions:
             return action
         else:
@@ -88,7 +107,8 @@ class AI:
                 return True
 
         return False
-    def simulate_gameplay(self, apple_x, apple_y):
+    
+    def simulate_gameplay(self, apple_x, apple_y, apple_attraction, wall_repulsion, snake_repulsion):
         game_over_flag = False
         x, y = display_width / 2, display_height / 2
         snake_list = []
@@ -190,9 +210,9 @@ def evaluate_fitness(agent, num_games=10):
     total_score = 0
     for _ in range(num_games):
         apple_x, apple_y = generate_apple_position()
-        total_score += agent.simulate_gameplay(apple_x, apple_y)
+        total_score += agent.simulate_gameplay(apple_x, apple_y, apple_attraction_value, wall_repulsion_value, snake_repulsion_value)
 
-    average_score = total_score 
+    average_score = total_score / num_games
 
     return average_score
 
@@ -201,12 +221,12 @@ def main():
     population = create_initial_population(population_size)
     best_agent = None
 
-    # Evaluate fitness for the initial population
-    for agent in population:
-        agent.fitness = evaluate_fitness(agent)
-
     # Main evolution loop
     for generation in range(num_generations):
+        # Evaluate fitness for the initial population
+        for agent in population:
+            agent.fitness = evaluate_fitness(agent)
+
         # Find the best agent in the current generation
         best_agent_in_generation = max(population, key=lambda agent: agent.fitness)
 
@@ -237,9 +257,8 @@ def main():
     num_games_to_simulate = 10 
     for i in range(num_games_to_simulate):
         apple_x, apple_y = generate_apple_position()
-        score = best_agent.simulate_gameplay(apple_x, apple_y)
+        score = best_agent.simulate_gameplay(apple_x, apple_y, apple_attraction_value, wall_repulsion_value, snake_repulsion_value)
         print(f"Game {i+1}/{num_games_to_simulate} - Score: {score}")
-
 
 def create_fitness_progress_plot(best_fitness_scores):
     # Plot the best fitness scores for each generation
@@ -252,4 +271,3 @@ def create_fitness_progress_plot(best_fitness_scores):
 
 if __name__ == "__main__":
     main()
-
