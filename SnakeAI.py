@@ -3,6 +3,8 @@ import math
 import json
 import matplotlib.pyplot as plt
 from PySnake import display_width, display_height, snake_block_size, generate_apple_position
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
 
 best_fitness_scores = []
 
@@ -15,82 +17,49 @@ mutation_rate = 0.1
 
 class AI:
     def __init__(self, genes):
-        self.genes = genes
+        self.genes = {
+            'apple_attraction': genes[0],
+            'wall_repulsion': genes[1],
+            'snake_repulsion': genes[2]
+        }
         self.fitness = 0
 
-    def bearing(self, x1, y1, x2, y2):
-        dx = x2 - x1
-        dy = y2 - y1
-        angle = math.atan2(dy, dx)
-        if angle < 0:
-            angle += 2 * math.pi
-        return angle
+        # Initialize the MLP model
+        self.model = self.initialize_mlp()
 
-    def determine_action(self, snake_x, snake_y, apple_x, apple_y, x_change, y_change, snake_list):
-        bearing_to_apple = self.bearing(snake_x, snake_y, apple_x, apple_y)
-        valid_actions = []
-
-        # Determine current direction
-        if x_change == snake_block_size:
-            current_direction = "right"
-        elif x_change == -snake_block_size:
-            current_direction = "left"
-        elif y_change == snake_block_size:
-            current_direction = "down"
-        elif y_change == -snake_block_size:
-            current_direction = "up"
-        else:
-            current_direction = None
-
-        if current_direction != "left":
-            valid_actions.append("right")
-        if current_direction != "right":
-            valid_actions.append("left")
-        if current_direction != "up":
-            valid_actions.append("down")
-        if current_direction != "down":
-            valid_actions.append("up")
-
-        # Calculate the total repulsion using genes
-        total_repulsion = (
-            self.genes[0] * math.cos(bearing_to_apple) +
-            self.genes[1] +
-            self.genes[2]
+    def initialize_mlp(self):
+        # Create and configure the MLP model
+        model = MLPClassifier(
+            hidden_layer_sizes=(16, 16),  # Adjust the number of layers and neurons as needed
+            activation='relu',  # You can choose different activation functions
+            max_iter=1000,  # You can adjust the number of training iterations
         )
 
-        if total_repulsion >= 0:
-            action = "right"
-        elif total_repulsion >= -math.pi / 4:
-            action = "down"
-        elif total_repulsion >= -3 * math.pi / 4:
-            action = "left"
-        else:
-            action = "up"
+        # Fit the model to the training data
+        model.fit(x_train, y_train)
 
-        if action in valid_actions:
-            return action
-        else:
-            # If the action selected by the genes is invalid, choose a random valid action
-            return random.choice(valid_actions)
+        return model
 
+    def determine_action(self, x1, y1, apple_x, apple_y, x1_change, y1_change, snake_list):
+        # Extract features based on current state and genes
+        features = [
+            x1, y1, apple_x, apple_y, x1_change, y1_change,
+            self.genes['apple_attraction'], self.genes['wall_repulsion'], self.genes['snake_repulsion']
+        ]
 
-    def will_collide(self, snake_x, snake_y, action, snake_list):
-        # Simulate the move before making it
-        if action == "up":
-            new_x, new_y = snake_x, snake_y - snake_block_size
-        elif action == "down":
-            new_x, new_y = snake_x, snake_y + snake_block_size
-        elif action == "left":
-            new_x, new_y = snake_x - snake_block_size, snake_y
-        elif action == "right":
-            new_x, new_y = snake_x + snake_block_size, snake_y
+        # Standardize the features (scaling)
+        scaler = StandardScaler()
+        scaled_features = scaler.transform([features])
 
-        # Check if the new position would collide with the snake's body
-        for segment in snake_list[:-1]:
-            if (new_x, new_y) == segment:
-                return True
+        # Predict the best action using the fitted MLP model
+        action_probabilities = self.model.predict_proba(scaled_features)[0]
 
-        return False
+        # Map predicted probabilities to actions
+        actions = ["up", "down", "left", "right"]
+        action = actions[action_probabilities.argmax()]
+
+        return action
+
     
     def simulate_gameplay(self, apple_x, apple_y):
         # Initialize the game variables

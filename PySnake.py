@@ -37,13 +37,6 @@ def generate_apple_position():
     apple_y = round(random.randrange(0, display_height - snake_block_size) / snake_block_size) * snake_block_size
     return apple_x, apple_y
 
-# def handle_apple_collision(x1, y1, apple_x, apple_y, length_of_snake, current_score):
-#     # Check if the snake eats the apple
-#         if (x1, y1) == (apple_x, apple_y):
-#             apple_x, apple_y = generate_apple_position()
-#             length_of_snake += 1
-#             current_score +=1
-
 # Function to handle player's movement
 def end_game():
     for event in pygame.event.get():
