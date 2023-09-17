@@ -6,10 +6,12 @@ from PySnake import display_width, display_height, snake_block_size, generate_ap
 
 best_fitness_scores = []
 
-# Define repulsion values
-apple_attraction_value = 1.0
-wall_repulsion_value = 0.5
-snake_repulsion_value = 0.2
+# Constants
+num_genes = 3  # Change the number of genes to 3
+population_size = 50
+parent_selection_rate = 0.3
+num_generations = 100
+mutation_rate = 0.1
 
 class AI:
     def __init__(self, genes):
@@ -19,32 +21,16 @@ class AI:
     def bearing(self, x1, y1, x2, y2):
         dx = x2 - x1
         dy = y2 - y1
-
         angle = math.atan2(dy, dx)
         if angle < 0:
-            # Ensure angle is in the range [0, 2*pi]
-            angle += 2 * math.pi  
-
+            angle += 2 * math.pi
         return angle
-
-    def calculate_wall_repulsion(self, snake_x, snake_y, display_width, display_height):
-        distance_to_wall = min(snake_x, snake_y, display_width - snake_x, display_height - snake_y)
-        wall_repulsion = 1 / (distance_to_wall + 1)  # Add 1 to avoid division by zero
-        return wall_repulsion
-
-    def calculate_snake_repulsion(self, snake_x, snake_y, snake_list):
-        min_distance = float('inf')
-        for segment in snake_list[:-1]:
-            distance = math.sqrt((snake_x - segment[0]) ** 2 + (snake_y - segment[1]) ** 2)
-            min_distance = min(min_distance, distance)
-        snake_repulsion = 1 / (min_distance + 1)  # Add 1 to avoid division by zero
-        return snake_repulsion
 
     def determine_action(self, snake_x, snake_y, apple_x, apple_y, x_change, y_change, snake_list):
         bearing_to_apple = self.bearing(snake_x, snake_y, apple_x, apple_y)
-
         valid_actions = []
 
+        # Determine current direction
         if x_change == snake_block_size:
             current_direction = "right"
         elif x_change == -snake_block_size:
@@ -69,10 +55,11 @@ class AI:
             if self.will_collide(snake_x, snake_y, action, snake_list):
                 valid_actions.remove(action)
 
+        # Calculate the total repulsion using genes
         total_repulsion = (
-            apple_attraction_value * math.cos(bearing_to_apple) +
-            wall_repulsion_value +
-            snake_repulsion_value
+            self.genes[0] * math.cos(bearing_to_apple) +
+            self.genes[1] +
+            self.genes[2]
         )
 
         if total_repulsion >= 0:
@@ -101,14 +88,14 @@ class AI:
             new_x, new_y = snake_x + snake_block_size, snake_y
 
         # Check if the new position would collide with the snake's body
-        # Exclude the snake's head
-        for segment in snake_list[:-1]:  
+        for segment in snake_list[:-1]:
             if (new_x, new_y) == segment:
                 return True
 
         return False
     
-    def simulate_gameplay(self, apple_x, apple_y, apple_attraction, wall_repulsion, snake_repulsion):
+    def simulate_gameplay(self, apple_x, apple_y):
+        # Initialize the game variables
         game_over_flag = False
         x, y = display_width / 2, display_height / 2
         snake_list = []
@@ -150,18 +137,11 @@ class AI:
 
         return length_of_snake - 1
 
-# Constants
-num_genes = 4
-population_size = 50
-parent_selection_rate = 0.3
-num_generations = 100
-mutation_rate = 0.1
-
 def create_initial_population(population_size):
-    # Create an initial population of AI agents with random genes
     initial_population = []
     for _ in range(population_size):
-        genes = [random.choice(["up", "down", "left", "right"]) for _ in range(num_genes)]
+        # Initialize genes randomly within a specific range
+        genes = [random.uniform(0.0, 1.0) for _ in range(num_genes)]
         initial_population.append(AI(genes))
     return initial_population
 
@@ -169,13 +149,16 @@ def mutate(agent):
     # Mutate an agent's genes with a certain probability
     for i in range(len(agent.genes)):
         if random.random() < mutation_rate:
-            agent.genes[i] = random.choice(["up", "down", "left", "right"])
+            # Mutate the gene to a random value within a specific range
+            agent.genes[i] = random.uniform(0.0, 1.0)  # Adjust the range as needed
 
 def crossover(parent1, parent2):
     # Perform crossover between two parents' genes to create a new agent
     crossover_point = random.randint(1, len(parent1.genes) - 1)
     offspring_genes = parent1.genes[:crossover_point] + parent2.genes[crossover_point:]
-    return AI(offspring_genes)
+    child = AI(offspring_genes)
+    return child
+
 
 def evolve_population(current_population):
     # Evaluate fitness for each AI agent in the population
@@ -210,7 +193,7 @@ def evaluate_fitness(agent, num_games=10):
     total_score = 0
     for _ in range(num_games):
         apple_x, apple_y = generate_apple_position()
-        total_score += agent.simulate_gameplay(apple_x, apple_y, apple_attraction_value, wall_repulsion_value, snake_repulsion_value)
+        total_score += agent.simulate_gameplay(apple_x, apple_y)
 
     average_score = total_score / num_games
 
@@ -257,7 +240,7 @@ def main():
     num_games_to_simulate = 10 
     for i in range(num_games_to_simulate):
         apple_x, apple_y = generate_apple_position()
-        score = best_agent.simulate_gameplay(apple_x, apple_y, apple_attraction_value, wall_repulsion_value, snake_repulsion_value)
+        score = best_agent.simulate_gameplay(apple_x, apple_y)
         print(f"Game {i+1}/{num_games_to_simulate} - Score: {score}")
 
 def create_fitness_progress_plot(best_fitness_scores):
