@@ -1,5 +1,7 @@
 import pygame
 import random
+import json
+import os
 
 # Initialize pygame
 pygame.init()
@@ -39,6 +41,11 @@ x1_change, y1_change = 0, 0
 
 current_score = 0
 
+# Initialize data logging variables
+X_train = []  # Initialize x_train
+y_train = []  # Initialize y_train
+data_log = []  # Initialize data_log to store game data for one session
+
 # Function to display player's score
 def player_score(score):
     value = score_font.render("Score: " + str(score), True, black)
@@ -70,9 +77,18 @@ def handle_apple_collision(apple_x, apple_y, length_of_snake):
         current_score += 1
     return apple_x, apple_y, length_of_snake
 
-# Function to handle player's movement
+# Define action constants
+ACTION_UP = 0
+ACTION_DOWN = 1
+ACTION_LEFT = 2
+ACTION_RIGHT = 3
+
+# Initialize action_t
+action_t = None
+
+# Function to handle player's movement and action recording
 def handle_movement():
-    global x1, y1, x1_change, y1_change
+    global x1, y1, x1_change, y1_change, action_t
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -81,12 +97,16 @@ def handle_movement():
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_a:
                 x1_change, y1_change = -snake_block_size, 0
+                action_t = ACTION_LEFT
             elif event.key == pygame.K_d:
                 x1_change, y1_change = snake_block_size, 0
+                action_t = ACTION_RIGHT
             elif event.key == pygame.K_w:
                 y1_change, x1_change = -snake_block_size, 0
+                action_t = ACTION_UP
             elif event.key == pygame.K_s:
                 y1_change, x1_change = snake_block_size, 0
+                action_t = ACTION_DOWN
 
     x1 += x1_change
     y1 += y1_change
@@ -111,6 +131,29 @@ def game_over(score):
                     quit()
                 if event.key == pygame.K_w:
                     main_game_loop(1)
+
+# Function to log data after each game session
+def log_data():
+    global X_train, y_train, data_log
+
+    # Load existing data from the JSON file
+    json_filename = 'game_data.json'
+    existing_data = []
+
+    try:
+        with open(json_filename, 'r') as json_file:
+            existing_data = json.load(json_file)
+    except FileNotFoundError:
+        pass  # The file doesn't exist yet
+
+    # Append the new data to the existing data
+    existing_data.extend(data_log)
+
+    # Write the accumulated data back to the JSON file
+    with open(json_filename, 'w') as json_file:
+        json.dump(existing_data, json_file)
+
+    data_log = []  # Clear data_log after logging
 
 # Main game loop
 def main_game_loop(initial_length_of_snake):
@@ -149,8 +192,13 @@ def main_game_loop(initial_length_of_snake):
 
         apple_x, apple_y, length_of_snake = handle_apple_collision(apple_x, apple_y, length_of_snake)
 
+        # Record the game state and action in data_log
+        game_state = [x1, y1, apple_x, apple_y, x1_change, y1_change]
+        data_log.append((game_state, action_t))  # action_t is the action taken in this step
+
         clock.tick(snake_velocity)
 
+    log_data()  # Log data after the game session is over
     game_over(current_score)  # Display game over message with score
 
 # Start the game loop with initial snake length of 1
