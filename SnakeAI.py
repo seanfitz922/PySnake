@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from PySnake import display_width, display_height, snake_block_size, generate_apple_position
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
+from train_mlp import x_train, y_train
 
 best_fitness_scores = []
 
@@ -24,32 +25,46 @@ class AI:
         }
         self.fitness = 0
 
-        # Initialize the MLP model
-        self.model = self.initialize_mlp()
+        # Initialize the MLP model and the StandardScaler
+        self.model, self.scaler = self.initialize_mlp()
+        print("init1")
 
     def initialize_mlp(self):
         # Create and configure the MLP model
         model = MLPClassifier(
             hidden_layer_sizes=(16, 16),  # Adjust the number of layers and neurons as needed
             activation='relu',  # You can choose different activation functions
-            max_iter=1000,  # You can adjust the number of training iterations
+            max_iter=10000,  # You can adjust the number of training iterations
         )
 
         # Fit the model to the training data
         model.fit(x_train, y_train)
 
-        return model
+        # Create a StandardScaler instance
+        scaler = StandardScaler()
+
+        # Fit the scaler to your training data
+        scaler.fit(x_train)
+        print("final")
+
+        return model, scaler
 
     def determine_action(self, x1, y1, apple_x, apple_y, x1_change, y1_change, snake_list):
+        # Calculate distances to walls and the apple
+        dist_to_wall_up = y1
+        dist_to_wall_down = display_height - y1
+        dist_to_wall_left = x1
+        dist_to_wall_right = display_width - x1
+        dist_to_apple = math.sqrt((x1 - apple_x) ** 2 + (y1 - apple_y) ** 2)
+
         # Extract features based on current state and genes
         features = [
             x1, y1, apple_x, apple_y, x1_change, y1_change,
-            self.genes['apple_attraction'], self.genes['wall_repulsion'], self.genes['snake_repulsion']
+            dist_to_wall_up, dist_to_wall_down, dist_to_wall_left, dist_to_wall_right, dist_to_apple
         ]
 
-        # Standardize the features (scaling)
-        scaler = StandardScaler()
-        scaled_features = scaler.transform([features])
+        # Standardize the features (scaling) using the fitted scaler
+        scaled_features = self.scaler.transform([features])
 
         # Predict the best action using the fitted MLP model
         action_probabilities = self.model.predict_proba(scaled_features)[0]
@@ -60,8 +75,10 @@ class AI:
 
         return action
 
-    
+
     def simulate_gameplay(self, apple_x, apple_y):
+        print("HERE")
+
         # Initialize the game variables
         game_over_flag = False
         x, y = display_width / 2, display_height / 2
@@ -81,6 +98,7 @@ class AI:
                     game_over_flag = True
 
             # Use the determine_action method to select action
+            print("READING")
             agent_action = self.determine_action(x, y, apple_x, apple_y, x_change, y_change, snake_list)
 
             if agent_action == "up":
@@ -102,7 +120,20 @@ class AI:
                 apple_x, apple_y = generate_apple_position()
                 length_of_snake += 1
 
+        print("finish sim")
+        print("finish sim")
+        print("finish sim")
+        print("finish sim")
+        print("finish sim")
+        print("finish sim")
+        print("finish sim")
+        print("finish sim")
+        print("finish sim")
+
+
+
         return length_of_snake - 1
+
 
 def create_initial_population(population_size):
     initial_population = []
@@ -170,6 +201,8 @@ def main():
     # Create an initial population
     population = create_initial_population(population_size)
     best_agent = None
+
+    print("in main")
 
     # Main evolution loop
     for generation in range(num_generations):

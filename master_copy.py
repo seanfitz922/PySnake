@@ -1,7 +1,4 @@
-import pygame
-import random
-import json
-import os
+import pygame, random, json, os, math
 
 # Initialize pygame
 pygame.init()
@@ -147,7 +144,8 @@ def log_data():
         pass  # The file doesn't exist yet
 
     # Append the new data to the existing data
-    existing_data.extend(data_log)
+    for game_state, action in data_log:
+        existing_data.append((game_state, action))
 
     # Write the accumulated data back to the JSON file
     with open(json_filename, 'w') as json_file:
@@ -171,8 +169,16 @@ def main_game_loop(initial_length_of_snake):
 
     apple_x, apple_y = generate_apple_position()
 
+    # Inside the main_game_loop function, where you record data
     while not game_over_flag:
         game_over_flag = handle_movement()
+
+        # Calculate distances to walls and the apple
+        dist_to_wall_up = y1
+        dist_to_wall_down = display_height - y1
+        dist_to_wall_left = x1
+        dist_to_wall_right = display_width - x1
+        dist_to_apple = math.sqrt((x1 - apple_x) ** 2 + (y1 - apple_y) ** 2)
 
         display.blit(background_image, (0, 0))
         pygame.draw.rect(display, red, [apple_x, apple_y, snake_block_size, snake_block_size])
@@ -192,9 +198,12 @@ def main_game_loop(initial_length_of_snake):
 
         apple_x, apple_y, length_of_snake = handle_apple_collision(apple_x, apple_y, length_of_snake)
 
-        # Record the game state and action in data_log
-        game_state = [x1, y1, apple_x, apple_y, x1_change, y1_change]
-        data_log.append((game_state, action_t))  # action_t is the action taken in this step
+        # Calculate distances and include them in game_state
+        game_state = [x1, y1, apple_x, apple_y, x1_change, y1_change,
+                    dist_to_wall_up, dist_to_wall_down, dist_to_wall_left, dist_to_wall_right, dist_to_apple]
+
+        # Append game_state to data_log
+        data_log.append((game_state, action_t))
 
         clock.tick(snake_velocity)
 
