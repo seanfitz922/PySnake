@@ -129,11 +129,11 @@ def game_over(score):
                 if event.key == pygame.K_w:
                     main_game_loop(1)
 
-# Function to log data after each game session
+# Function to log data after each game 
 def log_data():
     global X_train, y_train, data_log
 
-    # Load existing data from the JSON file
+    # Load existing data from the json file
     json_filename = 'game_data.json'
     existing_data = []
 
@@ -141,17 +141,17 @@ def log_data():
         with open(json_filename, 'r') as json_file:
             existing_data = json.load(json_file)
     except FileNotFoundError:
-        pass  # The file doesn't exist yet
+        pass 
 
     # Append the new data to the existing data
     for game_state, action in data_log:
         existing_data.append((game_state, action))
 
-    # Write the accumulated data back to the JSON file
+    # Write the accumulated data to json file
     with open(json_filename, 'w') as json_file:
         json.dump(existing_data, json_file)
 
-    data_log = []  # Clear data_log after logging
+    data_log = [] 
 
 # Main game loop
 def main_game_loop(initial_length_of_snake):

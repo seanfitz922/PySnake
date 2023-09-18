@@ -10,7 +10,7 @@ from train_mlp import x_train, y_train
 best_fitness_scores = []
 
 # Constants
-num_genes = 3  # Change the number of genes to 3
+num_genes = 3  
 population_size = 50
 parent_selection_rate = 0.3
 num_generations = 100
@@ -32,9 +32,9 @@ class AI:
     def initialize_mlp(self):
         # Create and configure the MLP model
         model = MLPClassifier(
-            hidden_layer_sizes=(16, 16),  # Adjust the number of layers and neurons as needed
-            activation='relu',  # You can choose different activation functions
-            max_iter=10000,  # You can adjust the number of training iterations
+            hidden_layer_sizes=(16, 16), 
+            activation='relu', 
+            max_iter=1000,  
         )
 
         # Fit the model to the training data
@@ -63,18 +63,36 @@ class AI:
             dist_to_wall_up, dist_to_wall_down, dist_to_wall_left, dist_to_wall_right, dist_to_apple
         ]
 
-        # Standardize the features (scaling) using the fitted scaler
+        # Standardize the features using the fitted scaler
         scaled_features = self.scaler.transform([features])
 
         # Predict the best action using the fitted MLP model
         action_probabilities = self.model.predict_proba(scaled_features)[0]
 
-        # Map predicted probabilities to actions
-        actions = ["up", "down", "left", "right"]
-        action = actions[action_probabilities.argmax()]
+        # Apply genes to adjust the action
+        action_scores = {
+            "up": action_probabilities[0],
+            "down": action_probabilities[1],
+            "left": action_probabilities[2],
+            "right": action_probabilities[3]
+        }
+
+        # Prioritize apple 
+        if dist_to_apple < 100:
+            # If the apple is close, prioritize going towards it
+            if apple_x < x1:
+                action_scores["left"] += 0.2
+            elif apple_x > x1:
+                action_scores["right"] += 0.2
+            if apple_y < y1:
+                action_scores["up"] += 0.2
+            elif apple_y > y1:
+                action_scores["down"] += 0.2
+
+        # Choose the action with the highest adjusted score
+        action = max(action_scores, key=lambda key: action_scores[key])
 
         return action
-
 
     def simulate_gameplay(self, apple_x, apple_y):
         print("HERE")
@@ -119,18 +137,6 @@ class AI:
             if (x, y) == (apple_x, apple_y):
                 apple_x, apple_y = generate_apple_position()
                 length_of_snake += 1
-
-        print("finish sim")
-        print("finish sim")
-        print("finish sim")
-        print("finish sim")
-        print("finish sim")
-        print("finish sim")
-        print("finish sim")
-        print("finish sim")
-        print("finish sim")
-
-
 
         return length_of_snake - 1
 
