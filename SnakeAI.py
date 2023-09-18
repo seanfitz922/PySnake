@@ -77,22 +77,30 @@ class AI:
             "right": action_probabilities[3]
         }
 
-        # Prioritize apple 
+        # Apply genes for apple attraction, wall repulsion, and snake repulsion
+        action_scores["up"] += self.genes["apple_attraction"] * (1 / (dist_to_apple + 1))  
+        action_scores["down"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_down + 1))  
+        action_scores["up"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_up + 1))  
+        action_scores["left"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_left + 1))  
+        action_scores["right"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_right + 1))
+
+        # Prioritize apple if it's close
         if dist_to_apple < 100:
-            # If the apple is close, prioritize going towards it
             if apple_x < x1:
-                action_scores["left"] += 0.2
+                action_scores["left"] += self.genes["apple_attraction"]
             elif apple_x > x1:
-                action_scores["right"] += 0.2
+                action_scores["right"] += self.genes["apple_attraction"]
             if apple_y < y1:
-                action_scores["up"] += 0.2
+                action_scores["up"] += self.genes["apple_attraction"]
             elif apple_y > y1:
-                action_scores["down"] += 0.2
+                action_scores["down"] += self.genes["apple_attraction"]
 
         # Choose the action with the highest adjusted score
         action = max(action_scores, key=lambda key: action_scores[key])
 
         return action
+
+
 
     def simulate_gameplay(self, apple_x, apple_y):
         print("HERE")
