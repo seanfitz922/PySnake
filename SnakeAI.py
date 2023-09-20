@@ -4,6 +4,8 @@ import json
 import matplotlib.pyplot as plt
 from PySnake import display_width, display_height, snake_block_size, generate_apple_position
 from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import StandardScaler
 from train_mlp import x_train, y_train
 
@@ -26,28 +28,26 @@ class AI:
         self.fitness = 0
 
         # Initialize the MLP model and the StandardScaler
-        self.model, self.scaler = self.initialize_mlp()
+        self.initialize_mlp()
         print("init1")
+
+        self.action_list = ["up","down","left","right"]
 
     def initialize_mlp(self):
         # Create and configure the MLP model
-        model = MLPClassifier(
-            hidden_layer_sizes=(16, 16), 
-            activation='relu', 
-            max_iter=1000,  
-        )
+
+        self.model = DecisionTreeClassifier()
 
         # Fit the model to the training data
-        model.fit(x_train, y_train)
-
         # Create a StandardScaler instance
-        scaler = StandardScaler()
+        self.scaler = StandardScaler()
 
-        # Fit the scaler to your training data
-        scaler.fit(x_train)
+        # Fit the scaler to your training data and transform it
+        # x_train = self.scaler.fit_transform(x_train)
+        
+        self.model.fit(x_train, y_train)
+
         print("final")
-
-        return model, scaler
 
     def determine_action(self, x1, y1, apple_x, apple_y, x1_change, y1_change, snake_list):
         # Calculate distances to walls and the apple
@@ -64,39 +64,41 @@ class AI:
         ]
 
         # Standardize the features using the fitted scaler
-        scaled_features = self.scaler.transform([features])
+        # scaled_features = self.scaler.transform([features])
 
         # Predict the best action using the fitted MLP model
-        action_probabilities = self.model.predict_proba(scaled_features)[0]
+        action = self.action_list[self.model.predict([features])[0]]
+        
+        print(features, action)
 
         # Apply genes to adjust the action
-        action_scores = {
-            "up": action_probabilities[0],
-            "down": action_probabilities[1],
-            "left": action_probabilities[2],
-            "right": action_probabilities[3]
-        }
+        # action_scores = {
+        #     "up": action_probabilities[0],
+        #     "down": action_probabilities[1],
+        #     "left": action_probabilities[2],
+        #     "right": action_probabilities[3]
+        # }
 
         # Apply genes for apple attraction, wall repulsion, and snake repulsion
-        action_scores["up"] += self.genes["apple_attraction"] * (1 / (dist_to_apple + 1))  
-        action_scores["down"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_down + 1))  
-        action_scores["up"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_up + 1))  
-        action_scores["left"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_left + 1))  
-        action_scores["right"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_right + 1))
+        # action_scores["up"] += self.genes["apple_attraction"] * (1 / (dist_to_apple + 1))  
+        # action_scores["down"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_down + 1))  
+        # action_scores["up"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_up + 1))  
+        # action_scores["left"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_left + 1))  
+        # action_scores["right"] -= self.genes["wall_repulsion"] * (1 / (dist_to_wall_right + 1))
 
-        # Prioritize apple if it's close
-        if dist_to_apple < 100:
-            if apple_x < x1:
-                action_scores["left"] += self.genes["apple_attraction"]
-            elif apple_x > x1:
-                action_scores["right"] += self.genes["apple_attraction"]
-            if apple_y < y1:
-                action_scores["up"] += self.genes["apple_attraction"]
-            elif apple_y > y1:
-                action_scores["down"] += self.genes["apple_attraction"]
+        # # Prioritize apple if it's close
+        # if dist_to_apple < 100:
+        #     if apple_x < x1:
+        #         action_scores["left"] += self.genes["apple_attraction"]
+        #     elif apple_x > x1:
+        #         action_scores["right"] += self.genes["apple_attraction"]
+        #     if apple_y < y1:
+        #         action_scores["up"] += self.genes["apple_attraction"]
+        #     elif apple_y > y1:
+        #         action_scores["down"] += self.genes["apple_attraction"]
 
         # Choose the action with the highest adjusted score
-        action = max(action_scores, key=lambda key: action_scores[key])
+        # action = max(action_scores, key=lambda key: action_scores[key])
 
         return action
 

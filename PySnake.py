@@ -33,6 +33,8 @@ def draw_snake(display, snake_block_size, snake_list):
 
 # Function to generate apple's position
 def generate_apple_position():
+    random.seed(42)
+    
     apple_x = round(random.randrange(0, display_width - snake_block_size) / snake_block_size) * snake_block_size
     apple_y = round(random.randrange(0, display_height - snake_block_size) / snake_block_size) * snake_block_size
     return apple_x, apple_y

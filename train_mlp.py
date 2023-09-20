@@ -16,9 +16,5 @@ for item in data:
         x_train.append(game_state)
         y_train.append(action)
 
-# Create a StandardScaler instance
-scaler = StandardScaler()
 
-# Fit the scaler to your training data and transform it
-x_train = scaler.fit_transform(x_train)
 print("done")
