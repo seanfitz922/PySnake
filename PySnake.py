@@ -1,9 +1,9 @@
-import pygame, random, math
+import pygame, random
 
 # Set up display dimensions and other constants
 display_width = 900
 display_height = 900
-snake_block_size = 25  # Increase the snake size
+snake_block_size = 25  
 snake_velocity = 15
 
 # Set up colors and fonts
